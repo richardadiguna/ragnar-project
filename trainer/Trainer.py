@@ -16,7 +16,7 @@ class Trainer(BaseTrain):
             convres_kernel = self.sess.run(self.model.convres_kernel)
 
             for i in range(convres_kernel.shape[3]):
-                convres_kernel[:, :, :, i] = self.normalize(
+                convres_kernel[:, :, :, i] = normalize(
                     convres_kernel[:, :, :, i],
                     alpha=-1)
 
