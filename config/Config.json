@@ -1,7 +1,7 @@
 {
   "project_name": "ragnar",
-  "dataset_dir": "ragnar_dataset/",
-  "dataset_path": "ragnar_dataset/ragnar_dataset.npz",
+  "dataset_dir": "..dataset/ragnar-dataset/",
+  "dataset_path": "../dataset/ragnar-dataset/ragnar-dataset.npz",
   "num_epochs": 5,
   "num_iter_per_epoch": 125,
   "num_iter_per_eval": 25,
