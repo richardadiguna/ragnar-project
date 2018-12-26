@@ -196,7 +196,7 @@ class BayarNet(BaseModel):
 
     def conv_layer(self, inputs, filters, k_size,
                    stride, padding, scope_name,
-                   fabs=True, active=True, epsilon, train):
+                   epsilon, train, fabs=True, active=True):
 
         with tf.variable_scope(scope_name, reuse=tf.AUTO_REUSE) as scope:
             in_channels = inputs.shape[-1]
