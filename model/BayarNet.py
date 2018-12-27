@@ -45,7 +45,7 @@ class BayarNet(BaseModel):
             self.tr = tf.placeholder(
                 'bool', shape=None, name='trainable')
             self.kp = tf.placeholder(
-                'float32', shape='None', name='keep_prob')
+                'float32', shape=None, name='keep_prob')
             self.nk = tf.placeholder(
                 'float32', shape=None, name='normalized_kernel')
 
@@ -64,81 +64,82 @@ class BayarNet(BaseModel):
         with tf.name_scope('normalize_op') as scope:
             self.norm_kernel_op = tf.assign(
                 self.convres_kernel,
-                self.normalize_kernel)
+                self.nk)
 
         with tf.name_scope('network') as scope:
             with tf.control_dependencies([self.norm_kernel_op]):
-                convres = tf.nn.conv2d(
+                self.convres = tf.nn.conv2d(
                     self.x,
                     self.convres_kernel,
                     strides=[1, 1, 1, 1],
                     padding='VALID',
                     name='convres')
-                convres = tf.nn.bias_add(tf.nnconvres, self.convres_biases)
+                self.convres = tf.nn.bias_add(
+                    self.convres, self.convres_biases)
 
-            conv_1 = conv_layer(
+            conv_1 = self.conv_layer(
                 inputs=convres, filters=96,
                 k_size=7, stride=2,
                 padding='VALID',
                 scope_name='conv_1',
                 fabs=False, active=True,
                 epsilon=1e-4, train=self.tr)
-            pool_1 = maxpool(
+            pool_1 = self.maxpool(
                 inputs=conv_1,
                 k_size=5, stride=2,
                 padding='SAME',
                 scope_name='pool_1')
 
-            conv_2 = conv_layer(
+            conv_2 = self.conv_layer(
                 inputs=pool_1, filters=64,
                 k_size=5, stride=1,
                 padding='VALID',
                 scope_name='conv_2',
                 fabs=False, active=True,
                 epsilon=1e-4, train=self.tr)
-            pool_2 = maxpool(
+            pool_2 = self.maxpool(
                 inputs=conv_2,
                 k_size=5, stride=2,
                 padding='SAME',
                 scope_name='pool_2')
 
-            conv_3 = conv_layer(
+            conv_3 = self.conv_layer(
                 inputs=pool_2, filters=64,
                 k_size=5, stride=1,
                 padding='VALID',
                 scope_name='conv_3',
                 fabs=False, active=True,
                 epsilon=1e-4, train=self.tr)
-            pool_3 = maxpool(
+            pool_3 = self.maxpool(
                 inputs=conv_3,
                 k_size=5, stride=2,
                 padding='SAME',
                 scope_name='pool_3')
 
-            conv_4 = conv_layer(
+            conv_4 = self.conv_layer(
                 inputs=pool_3, filters=128,
                 k_size=1, stride=1,
                 padding='VALID',
                 scope_name='conv_4',
                 fabs=False, active=True,
                 epsilon=1e-4, train=self.tr)
-            pool_4 = averagepool(
+            pool_4 = self.averagepool(
                 inputs=conv_4,
                 k_size=5, stride=2,
                 padding='SAME',
                 scope_name='pool_4')
 
-            cur_dim = pool4.get_shape()
+            cur_dim = pool_4.get_shape()
             pool4_dim = cur_dim[1] * cur_dim[2] * cur_dim[3]
-            pool4_flatten = tf.reshape(pool4, shape=[-1, pool4_dim])
+            pool4_flatten = tf.reshape(pool_4, shape=[-1, pool4_dim])
 
             fc5 = self.fully_connected(
                 pool4_flatten, out_dim=1024,
                 scope_name='fc5', activation=tf.nn.relu)
             fc5 = tf.layers.dropout(
                 fc5,
-                self.keep_prob,
-                training=self.train,
+                self.kp,
+                training=self.tr,
                 name='dropout_1')
 
             fc6 = self.fully_connected(
@@ -146,8 +147,8 @@ class BayarNet(BaseModel):
                 scope_name='fc6', activation=tf.nn.relu)
             fc6 = tf.layers.dropout(
                 fc6,
-                self.keep_prob,
-                training=self.train,
+                self.kp,
+                training=self.tr,
                 name='dropout_2')
 
             self.logits = self.fully_connected(
@@ -168,7 +169,7 @@ class BayarNet(BaseModel):
 
         with tf.name_scope('train_step') as scope:
             self.optimizer = tf.train.MomentumOptimizer(
-                lr=config.learning_rate,
+                learning_rate=config.learning_rate,
                 momentum=self.config.momentum)
 
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -255,6 +256,15 @@ class BayarNet(BaseModel):
 
         with tf.variable_scope(scope_name, reuse=tf.AUTO_REUSE) as scope:
             pool = tf.nn.max_pool(
+                inputs, ksize=[1, k_size, k_size, 1],
+                strides=[1, stride, stride, 1], padding=padding)
+        return pool
+
+    def averagepool(self, inputs, k_size,
+                    stride, padding='VALID', scope_name='avgpool'):
+
+        with tf.variable_scope(scope_name, reuse=tf.AUTO_REUSE) as scope:
+            pool = tf.nn.avg_pool(
                 inputs, ksize=[1, k_size, k_size, 1],
                 strides=[1, stride, stride, 1], padding=padding)
         return pool
