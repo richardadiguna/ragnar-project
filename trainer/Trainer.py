@@ -47,7 +47,7 @@ class Trainer(BaseTrain):
         print('Average validation loss at epoch {0}: {1}'.format(
             cur_epoch, eval_loss))
         print('Validation accuracy at epoch {0}: {1}'.format(
-            cur_object, dtype, copy, order, subok, ndminepoch, eval_acc))
+            cur_epoch, eval_acc))
 
     def train_step(self, convres_kernel):
         batch_x, batch_y = self.data_loader.get_batch()
@@ -56,7 +56,6 @@ class Trainer(BaseTrain):
             self.model.x: batch_x,
             self.model.y: batch_y,
             self.model.tr: True,
-            self.model.kp: self.config.keep_prob,
             self.model.nk: convres_kernel
         }
         _, loss, acc, step = self.sess.run(
@@ -97,7 +96,6 @@ class Trainer(BaseTrain):
             self.model.x: batch_x,
             self.model.y: batch_y,
             self.model.tr: True,
-            self.model.kp: 1.0,
             self.model.nk: convres_kernel
         }
         acc, loss = self.sess.run(

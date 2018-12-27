@@ -8,6 +8,7 @@ class BayarNet(BaseModel):
                  config, trainable=True, retrain='complete'):
         super(BayarNet, self).__init__(config)
         self.data_loader = data_loader
+        self.kp = config.keep_prob
         self.n_classes = config.num_classes
         self.logits = None
         self.logits_argmax = None
@@ -44,8 +45,6 @@ class BayarNet(BaseModel):
                 'int32', shape=[None], name='y')
             self.tr = tf.placeholder(
                 'bool', shape=None, name='trainable')
-            self.kp = tf.placeholder(
-                'float32', shape=None, name='keep_prob')
             self.nk = tf.placeholder(
                 'float32', shape=None, name='normalized_kernel')
 
