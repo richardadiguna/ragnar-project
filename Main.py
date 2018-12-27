@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 from dataloader.DataLoader import DataLoader
-from model.VGG16 import VGG16
+from model.BayarNet import BayarNet
 from trainer.Trainer import Trainer
 from utils.Parser import process_config
 from utils.Logger import Logger
