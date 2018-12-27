@@ -56,7 +56,7 @@ class Trainer(BaseTrain):
             self.model.x: batch_x,
             self.model.y: batch_y,
             self.model.tr: True,
-            self.model.kp: self.config.keep_pob,
+            self.model.kp: self.config.keep_prob,
             self.model.nk: convres_kernel
         }
         _, loss, acc, step = self.sess.run(
