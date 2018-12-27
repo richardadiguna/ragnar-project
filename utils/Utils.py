@@ -1,8 +1,9 @@
 import os
 import argparse
+import numpy as np
 
 
-def normalize(self, nparray, alpha=-1):
+def normalize(nparray, alpha=-1):
     nparray = np.array(nparray)
     nparray[2, 2] = alpha
     nparray = np.ma.array(nparray, mask=False)
