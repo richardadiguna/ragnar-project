@@ -7,9 +7,10 @@
   "num_iter_per_eval": 25,
   "learning_rate": 0.001,
   "momentum": 0.95,
-  "batch_size": 64,
+  "batch_size": 32,
   "image_shape": 128,
   "image_channels": 3,
+  "keep_prob": 0.7,
   "max_to_keep":5,
   "num_classes": 2,
 }
