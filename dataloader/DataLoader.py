@@ -9,11 +9,9 @@ from sklearn.model_selection import train_test_split
 class DataLoader:
     def __init__(self, config):
         self.im_size = config.image_shape
+        self.im_channels = config.image_channels
         self.batch_size = config.batch_size
         self.dataset_path = config.dataset_path
-
-        if not os.path.isfile(config.dataset_path):
-            self.create_data_txt(config.dataset_dir)
 
         _, self.file_extension = os.path.splitext(config.dataset_path)
         self.get_dataset(config.dataset_path)
@@ -95,16 +93,6 @@ class DataLoader:
             self.X_train, self.X_val, self.y_train, self.y_val = \
                 train_test_split(X, y, test_size=0.20)
 
-        elif self.file_extension == '.txt':
-
-            txt_data = self.read_file_names(dataset_path)
-
-            X = [fname.split(' ')[0] for fname in txt_data]
-            y = [fname.split(' ')[1] for fname in txt_data]
-
-            self.X_train, self.X_val, self.y_train, self.y_val = \
-                train_test_split(X, y, test_size=0.20)
-
         self.num_train = len(self.X_train)
         self.num_val = len(self.X_val)
 
@@ -149,10 +137,11 @@ class DataLoader:
                 self.indices)
 
         image_batch = np.reshape(
-            np.squeeze(
-                np.stack(
-                    [image_batch])),
-            newshape=(self.batch_size, self.im_size, self.im_size, 3))
+            np.squeeze(np.stack([image_batch])),
+            newshape=(self.batch_size,
+                      self.im_size,
+                      self.im_size,
+                      self.im_channels))
 
         label_batch = np.stack(label_batch)
 
