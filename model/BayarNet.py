@@ -166,6 +166,15 @@ class BayarNet(BaseModel):
                 labels=self.y, logits=self.logits)
             self.loss = tf.reduce_mean(self.entropy, name='loss')
 
+        with tf.name_scope('learning_rate_decay') as scope:
+            learning_rate = tf.train.exponential_decay(
+                learning_rate=config.learning_rate,
+                global_step=self.global_step_tensor,
+                decay_step=config.decay_step,
+                decay_rate=config.decay_rate,
+                staircase=True,
+                name='learning_rate')
+
         with tf.name_scope('train_step') as scope:
             self.optimizer = tf.train.MomentumOptimizer(
                 learning_rate=config.learning_rate,
