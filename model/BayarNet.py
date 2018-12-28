@@ -167,17 +167,18 @@ class BayarNet(BaseModel):
             self.loss = tf.reduce_mean(self.entropy, name='loss')
 
         with tf.name_scope('learning_rate_decay') as scope:
-            learning_rate = tf.train.exponential_decay(
+            learning_rate = tf.train.cosine_decay_restarts(
                 learning_rate=config.learning_rate,
                 global_step=self.global_step_tensor,
-                decay_step=config.decay_step,
-                decay_rate=config.decay_rate,
-                staircase=True,
-                name='learning_rate')
+                first_decay_steps=config.num_iter_per_epoch,
+                t_mul=2.0,
+                m_mul=0.9,
+                alpha=0.0,
+                name='learning_rate_with_restart')
 
         with tf.name_scope('train_step') as scope:
             self.optimizer = tf.train.MomentumOptimizer(
-                learning_rate=config.learning_rate,
+                learning_rate=learning_rate,
                 momentum=self.config.momentum)
 
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
