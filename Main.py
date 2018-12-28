@@ -18,9 +18,6 @@ def main():
     with tf.Session(config=config) as sess:
         # create_dirs([config.summary_dir, config.checkpoint_dir])
         data = DataLoader(config=m_config)
-        x, y = data.get_batch(trainable=False)
-        print(x)
-        print(y)
         model = BayarNet(data_loader=data, config=m_config)
         logger = Logger(sess=sess, config=m_config)
 
