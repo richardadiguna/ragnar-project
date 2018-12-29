@@ -13,14 +13,7 @@ class Trainer(BaseTrain):
 
         for _ in range(self.config.num_iter_per_epoch):
 
-            convres_kernel = self.sess.run(self.model.convres_kernel)
-
-            for i in range(convres_kernel.shape[3]):
-                convres_kernel[:, :, :, i] = normalize(
-                    convres_kernel[:, :, :, i],
-                    alpha=-1)
-
-            loss, acc = self.train_step(convres_kernel)
+            loss, acc = self.train_step()
             losses.append(loss)
             accs.append(acc)
 
@@ -49,14 +42,13 @@ class Trainer(BaseTrain):
         print('Validation accuracy at epoch {0}: {1}'.format(
             cur_epoch, eval_acc))
 
-    def train_step(self, convres_kernel):
+    def train_step(self):
         batch_x, batch_y = self.data_loader.get_batch()
 
         feed_dict = {
             self.model.x: batch_x,
             self.model.y: batch_y,
             self.model.tr: True,
-            self.model.nk: convres_kernel
         }
         _, loss, acc, step = self.sess.run(
             [
@@ -78,9 +70,7 @@ class Trainer(BaseTrain):
 
         for i in range(self.config.num_iter_per_eval):
 
-            convres_kernel = self.sess.run(self.model.convres_kernel)
-
-            acc, loss = self.eval_step(convres_kernel)
+            acc, loss = self.eval_step()
             losses.append(loss)
             accs.append(acc)
 
@@ -89,14 +79,13 @@ class Trainer(BaseTrain):
 
         return acc, loss
 
-    def eval_step(self, convres_kernel):
+    def eval_step(self):
         batch_x, batch_y = self.data_loader.get_batch(trainable=False)
 
         feed_dict = {
             self.model.x: batch_x,
             self.model.y: batch_y,
             self.model.tr: True,
-            self.model.nk: convres_kernel
         }
         acc, loss = self.sess.run(
             [

@@ -1,5 +1,7 @@
 import numpy as np
 import tensorflow as tf
+
+from utils.Utils import normalize
 from base.BaseModel import BaseModel
 
 
@@ -45,8 +47,6 @@ class BayarNet(BaseModel):
                 'int32', shape=[None], name='y')
             self.tr = tf.placeholder(
                 'bool', shape=None, name='trainable')
-            self.nk = tf.placeholder(
-                'float32', shape=None, name='normalized_kernel')
 
             tf.add_to_collection('inputs', self.x)
             tf.add_to_collection('inputs', self.y)
@@ -60,21 +60,21 @@ class BayarNet(BaseModel):
                 'convres_biases', [3],
                 initializer=tf.random_normal_initializer())
 
-        with tf.name_scope('normalize_op') as scope:
-            self.norm_kernel_op = tf.assign(
-                self.convres_kernel,
-                self.nk)
-
         with tf.name_scope('network') as scope:
-            with tf.control_dependencies([self.norm_kernel_op]):
-                convres = tf.nn.conv2d(
-                    self.x,
-                    self.convres_kernel,
-                    strides=[1, 1, 1, 1],
-                    padding='VALID',
-                    name='convres')
-                convres = tf.nn.bias_add(
-                    convres, self.convres_biases)
+            normalized_k = tf.py_func(
+                normalize,
+                [self.convres_kernel],
+                dtype=tf.float32,
+                name='normalize_kernel')
+
+            convres = tf.nn.conv2d(
+                self.x,
+                normalized_k,
+                strides=[1, 1, 1, 1],
+                padding='VALID',
+                name='convres')
+            convres = tf.nn.bias_add(
+                convres, self.convres_biases)
 
             conv_1 = self.conv_layer(
                 inputs=convres, filters=96,
