@@ -69,18 +69,16 @@ class BayarNet(BaseModel):
             normalized_k.set_shape(
                 self.convres_kernel.get_shape())
 
-            assign_op = self.convres_kernel.assign(normalized_k)
+            self.assign_op = self.convres_kernel.assign(normalized_k)
 
-            with tf.control_dependencies([assign_op]):
-
-                convres = tf.nn.conv2d(
-                    self.x,
-                    self.convres_kernel,
-                    strides=[1, 1, 1, 1],
-                    padding='VALID',
-                    name='convres')
-                convres = tf.nn.bias_add(
-                    convres, self.convres_biases)
+            convres = tf.nn.conv2d(
+                self.x,
+                self.convres_kernel,
+                strides=[1, 1, 1, 1],
+                padding='VALID',
+                name='convres')
+            convres = tf.nn.bias_add(
+                convres, self.convres_biases)
 
             conv_1 = self.conv_layer(
                 inputs=convres, filters=96,

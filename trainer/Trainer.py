@@ -55,9 +55,12 @@ class Trainer(BaseTrain):
                 self.model.train_step,
                 self.model.loss,
                 self.model.accuracy,
-                self.model.global_step_inc
+                self.model.global_step_inc,
             ],
             feed_dict=feed_dict)
+
+        _ = self.sess.run(self.model.assign_op)
+        print(self.sess.run(self.model.convres_kernel))
 
         if (step + 1) % self.config.skip_step == 0:
             print('Loss at step {0}: {1}'.format(step, loss))
