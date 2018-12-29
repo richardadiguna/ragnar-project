@@ -44,20 +44,23 @@ class Trainer(BaseTrain):
 
     def train_step(self):
         batch_x, batch_y = self.data_loader.get_batch()
-        print(self.sess.run(self.model.convres_kernel))
+
         feed_dict = {
             self.model.x: batch_x,
             self.model.y: batch_y,
             self.model.tr: True,
         }
-        _, loss, acc, step = self.sess.run(
+        _, loss, acc, step, k = self.sess.run(
             [
                 self.model.train_step,
                 self.model.loss,
                 self.model.accuracy,
                 self.model.global_step_inc
+                self.model.convres_kernel
             ],
             feed_dict=feed_dict)
+
+        print(k)
 
         if (step + 1) % self.config.skip_step == 0:
             print('Loss at step {0}: {1}'.format(step, loss))

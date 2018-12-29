@@ -62,20 +62,27 @@ class BayarNet(BaseModel):
 
         with tf.name_scope('network') as scope:
 
-            normalized_k = tf.contrib.eager.py_func(
+            self.normalized_k = tf.py_func(
                 normalize,
                 [self.convres_kernel],
                 tf.float32,
                 name='normalize_kernel')
+            self.normalized_k.set_shape(self.convres_kernel.get_shape())
 
-            convres = tf.nn.conv2d(
-                self.x,
+            assign_op = tf.assign(
                 self.convres_kernel,
-                strides=[1, 1, 1, 1],
-                padding='VALID',
-                name='convres')
-            convres = tf.nn.bias_add(
-                convres, self.convres_biases)
+                self.normalized_k,
+                validate_shape=False)
+
+            with tf.control_dependencies([assign_op]):
+                convres = tf.nn.conv2d(
+                    self.x,
+                    self.convres_kernel,
+                    strides=[1, 1, 1, 1],
+                    padding='VALID',
+                    name='convres')
+                convres = tf.nn.bias_add(
+                    convres, self.convres_biases)
 
             conv_1 = self.conv_layer(
                 inputs=convres, filters=96,
