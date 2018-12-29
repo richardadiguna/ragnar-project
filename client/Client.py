@@ -10,30 +10,57 @@ from bunch import Bunch
 from flask import Flask
 from flask import request
 from flask import jsonify
+from generator.PatchGenerator import tf_patch_extract
+from utils.Utils import green_channel
 
 UPLOAD_FOLDER = '/temp'
 ALLOWED_EXTENSIONS = set(['jpg', 'jpeg'])
 
 HOST = 'localhost:8501'
-MODEL_NAME = 'kratos'
+MODEL_NAME = 'ragnar'
 VERSION = 1
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
-def get_prediction_from_model(img):
+def prediction_summary(preds):
+    pristine = 0
+    tampered = 0
+    num_preds = preds.shape[0]
+    class_predictions = np.argmax(preds, axis=1)
 
-    if img.shape != (128, 128):
-        img = cv2.resize(img, (128, 128))
+    for out in class_predictions:
+        if out == 1 or out == 2 or \
+           out == 3 or out == 4 or \
+           out == 5:
+            tampered += 1
+        else:
+            pristine += 1
 
-    payload = {"instances": [{'images': img.tolist()}]}
+    if tampered >= pristine:
+        return 'Tampered'
+    else:
+        tampered_prob = (tampered/num_preds)*100
+
+        if tampered_prob >= 15:
+            return "Tampered"
+        else:
+            return "Pristine"
+
+
+def get_prediction_from_model(data):
+
+    if data.shape != (128, 128):
+        data = cv2.resize(data, (128, 128))
+
+    payload = {"instances": [{'images': data.tolist()}]}
     r = requests.post(
         'http://localhost:8501/v1/models/kratos:predict',
         json=payload)
     b = r.content.decode('utf8').replace("'", '"')
-    data = json.loads(b)
-    response = Bunch(data)
+    c_data = json.loads(b)
+    response = Bunch(c_data)
 
     rank = np.argmax(response.predictions)
 
