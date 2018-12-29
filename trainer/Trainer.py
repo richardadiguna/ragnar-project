@@ -44,7 +44,7 @@ class Trainer(BaseTrain):
 
     def train_step(self):
         batch_x, batch_y = self.data_loader.get_batch()
-
+        print(self.sess.run(self.model.convres_kernel))
         feed_dict = {
             self.model.x: batch_x,
             self.model.y: batch_y,

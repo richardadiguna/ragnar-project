@@ -64,12 +64,16 @@ class BayarNet(BaseModel):
             normalized_k = tf.py_func(
                 normalize,
                 [self.convres_kernel],
-                dtype=tf.float32,
+                tf.float32,
                 name='normalize_kernel')
+
+            normalized_k.set_shape(self.convres_kernel.get_shape())
+
+            self.convres_kernel.assign(normalized_k)
 
             convres = tf.nn.conv2d(
                 self.x,
-                normalized_k,
+                self.convres_kernel,
                 strides=[1, 1, 1, 1],
                 padding='VALID',
                 name='convres')
