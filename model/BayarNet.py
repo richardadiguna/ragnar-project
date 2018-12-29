@@ -65,7 +65,8 @@ class BayarNet(BaseModel):
                 normalize,
                 [self.convres_kernel],
                 tf.float32,
-                name='normalized_kernel').set_shape(
+                name='normalized_kernel')
+            normalized_k.set_shape(
                 self.convres_kernel.get_shape())
 
             assign_op = self.convres_kernel.assign(normalized_k)
