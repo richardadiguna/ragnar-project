@@ -1,8 +1,8 @@
 {
   "project_name": "ragnar",
-  "dataset_dir": "..dataset/ragnar-dataset/",
-  "dataset_path": "../dataset/ragnar-dataset/ragnar-dataset.npz",
-  "num_epochs": 2,
+  "dataset_dir": "..dataset/ragnar-dataset-v2/",
+  "dataset_path": "../dataset/ragnar-dataset-v2/ragnar-dataset.npz",
+  "num_epochs": 5,
   "num_iter_per_epoch": 1560,
   "num_iter_per_eval": 390,
   "learning_rate": 0.001,
@@ -13,5 +13,6 @@
   "keep_prob": 0.5,
   "skip_step": 100,
   "max_to_keep":5,
-  "num_classes": 6
+  "num_classes": 6,
+  "log_device": false
 }

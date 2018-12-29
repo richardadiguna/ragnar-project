@@ -12,7 +12,7 @@ def main():
     args = get_args()
     m_config = process_config(args.config)
 
-    config = tf.ConfigProto(log_device_placement=True)
+    config = tf.ConfigProto(log_device_placement=m_config.log_device)
     config.gpu_options.allow_growth = True
 
     with tf.Session(config=config) as sess:
