@@ -14,6 +14,15 @@ def normalize(nparray, alpha=-1):
     return nparray
 
 
+def green_channel(im_path, window_size=128, stride=128):
+    image = cv2.imread(im_path)
+    image = image[:, :, 1].reshape(
+        image.shape[0],
+        image.shape[1],
+        1)
+    return image
+
+
 def create_dirs(dirs):
     try:
         for dir_ in dirs:
