@@ -56,7 +56,7 @@ class Trainer(BaseTrain):
                 self.model.loss,
                 self.model.accuracy,
                 self.model.global_step_inc
-                self.model.convres_kernel
+                self.model.res
             ],
             feed_dict=feed_dict)
 

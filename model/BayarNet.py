@@ -75,6 +75,7 @@ class BayarNet(BaseModel):
                 validate_shape=False)
 
             with tf.control_dependencies([assign_op]):
+                self.res = self.convres_kernel
                 convres = tf.nn.conv2d(
                     self.x,
                     self.convres_kernel,
@@ -84,85 +85,85 @@ class BayarNet(BaseModel):
                 convres = tf.nn.bias_add(
                     convres, self.convres_biases)
 
-            conv_1 = self.conv_layer(
-                inputs=convres, filters=96,
-                k_size=7, stride=2,
-                padding='VALID',
-                scope_name='conv_1',
-                fabs=False, active=True,
-                epsilon=1e-4, train=self.tr)
-            pool_1 = self.maxpool(
-                inputs=conv_1,
-                k_size=5, stride=2,
-                padding='SAME',
-                scope_name='pool_1')
+                conv_1 = self.conv_layer(
+                    inputs=convres, filters=96,
+                    k_size=7, stride=2,
+                    padding='VALID',
+                    scope_name='conv_1',
+                    fabs=False, active=True,
+                    epsilon=1e-4, train=self.tr)
+                pool_1 = self.maxpool(
+                    inputs=conv_1,
+                    k_size=5, stride=2,
+                    padding='SAME',
+                    scope_name='pool_1')
 
-            conv_2 = self.conv_layer(
-                inputs=pool_1, filters=64,
-                k_size=5, stride=1,
-                padding='VALID',
-                scope_name='conv_2',
-                fabs=False, active=True,
-                epsilon=1e-4, train=self.tr)
-            pool_2 = self.maxpool(
-                inputs=conv_2,
-                k_size=5, stride=2,
-                padding='SAME',
-                scope_name='pool_2')
+                conv_2 = self.conv_layer(
+                    inputs=pool_1, filters=64,
+                    k_size=5, stride=1,
+                    padding='VALID',
+                    scope_name='conv_2',
+                    fabs=False, active=True,
+                    epsilon=1e-4, train=self.tr)
+                pool_2 = self.maxpool(
+                    inputs=conv_2,
+                    k_size=5, stride=2,
+                    padding='SAME',
+                    scope_name='pool_2')
 
-            conv_3 = self.conv_layer(
-                inputs=pool_2, filters=64,
-                k_size=5, stride=1,
-                padding='VALID',
-                scope_name='conv_3',
-                fabs=False, active=True,
-                epsilon=1e-4, train=self.tr)
-            pool_3 = self.maxpool(
-                inputs=conv_3,
-                k_size=5, stride=2,
-                padding='SAME',
-                scope_name='pool_3')
+                conv_3 = self.conv_layer(
+                    inputs=pool_2, filters=64,
+                    k_size=5, stride=1,
+                    padding='VALID',
+                    scope_name='conv_3',
+                    fabs=False, active=True,
+                    epsilon=1e-4, train=self.tr)
+                pool_3 = self.maxpool(
+                    inputs=conv_3,
+                    k_size=5, stride=2,
+                    padding='SAME',
+                    scope_name='pool_3')
 
-            conv_4 = self.conv_layer(
-                inputs=pool_3, filters=128,
-                k_size=1, stride=1,
-                padding='VALID',
-                scope_name='conv_4',
-                fabs=False, active=True,
-                epsilon=1e-4, train=self.tr)
-            pool_4 = self.averagepool(
-                inputs=conv_4,
-                k_size=5, stride=2,
-                padding='SAME',
-                scope_name='pool_4')
+                conv_4 = self.conv_layer(
+                    inputs=pool_3, filters=128,
+                    k_size=1, stride=1,
+                    padding='VALID',
+                    scope_name='conv_4',
+                    fabs=False, active=True,
+                    epsilon=1e-4, train=self.tr)
+                pool_4 = self.averagepool(
+                    inputs=conv_4,
+                    k_size=5, stride=2,
+                    padding='SAME',
+                    scope_name='pool_4')
 
-            cur_dim = pool_4.get_shape()
-            pool4_dim = cur_dim[1] * cur_dim[2] * cur_dim[3]
-            pool4_flatten = tf.reshape(pool_4, shape=[-1, pool4_dim])
+                cur_dim = pool_4.get_shape()
+                pool4_dim = cur_dim[1] * cur_dim[2] * cur_dim[3]
+                pool4_flatten = tf.reshape(pool_4, shape=[-1, pool4_dim])
 
-            fc5 = self.fully_connected(
-                pool4_flatten, out_dim=1024,
-                scope_name='fc5', activation=tf.nn.relu)
-            fc5 = tf.layers.dropout(
-                fc5,
-                self.kp,
-                training=self.tr,
-                name='dropout_1')
+                fc5 = self.fully_connected(
+                    pool4_flatten, out_dim=1024,
+                    scope_name='fc5', activation=tf.nn.relu)
+                fc5 = tf.layers.dropout(
+                    fc5,
+                    self.kp,
+                    training=self.tr,
+                    name='dropout_1')
 
-            fc6 = self.fully_connected(
-                fc5, out_dim=512,
-                scope_name='fc6', activation=tf.nn.relu)
-            fc6 = tf.layers.dropout(
-                fc6,
-                self.kp,
-                training=self.tr,
-                name='dropout_2')
+                fc6 = self.fully_connected(
+                    fc5, out_dim=512,
+                    scope_name='fc6', activation=tf.nn.relu)
+                fc6 = tf.layers.dropout(
+                    fc6,
+                    self.kp,
+                    training=self.tr,
+                    name='dropout_2')
 
-            self.logits = self.fully_connected(
-                fc6, out_dim=self.n_classes,
-                scope_name='logits', activation=None)
+                self.logits = self.fully_connected(
+                    fc6, out_dim=self.n_classes,
+                    scope_name='logits', activation=None)
 
-            tf.add_to_collection('logits', self.logits)
+                tf.add_to_collection('logits', self.logits)
 
         with tf.name_scope('logits_argmax') as scope:
             self.logits_argmax = tf.argmax(
