@@ -69,7 +69,7 @@ class BayarNet(BaseModel):
             normalized_k.set_shape(
                 self.convres_kernel.get_shape())
 
-            self.assign_op = self.convres_kernel.assign(normalized_k)
+            assign_op = self.convres_kernel.assign(normalized_k)
 
             convres = tf.nn.conv2d(
                 self.x,
