@@ -46,6 +46,9 @@ class BayarNet(BaseModel):
                 'int32', shape=[None], name='y')
             self.tr = tf.placeholder(
                 'bool', shape=None, name='trainable')
+            self.nk = tf.placeholder(
+                'float32',
+                shape=[5, 5, 1, 3], name='normalized_kernel')
 
             tf.add_to_collection('inputs', self.x)
             tf.add_to_collection('inputs', self.y)
@@ -59,151 +62,141 @@ class BayarNet(BaseModel):
                 'convres_biases', [3],
                 initializer=tf.random_normal_initializer())
 
+        with tf.name_scope('normalized_op') as scope:
+            norm_op = tf.assign(self.convres_kernel, self.nk)
+
         with tf.name_scope('network') as scope:
+            convres = tf.nn.conv2d(
+                self.x,
+                self.convres_kernel,
+                strides=[1, 1, 1, 1],
+                padding='VALID',
+                name='convres')
+            convres = tf.nn.bias_add(
+                convres, self.convres_biases)
 
-            normalized_k = tf.py_func(
-                normalize,
-                [self.convres_kernel],
-                tf.float32,
-                name='normalized_kernel')
-            normalized_k.set_shape(
-                self.convres_kernel.get_shape())
+            conv_1 = self.conv_layer(
+                inputs=convres, filters=96,
+                k_size=7, stride=2,
+                padding='VALID',
+                scope_name='conv_1',
+                fabs=False, active=True,
+                epsilon=1e-4, train=self.tr)
+            pool_1 = self.maxpool(
+                inputs=conv_1,
+                k_size=5, stride=2,
+                padding='SAME',
+                scope_name='pool_1')
 
-            assign_op = self.convres_kernel.assign(normalized_k)
+            conv_2 = self.conv_layer(
+                inputs=pool_1, filters=64,
+                k_size=5, stride=1,
+                padding='VALID',
+                scope_name='conv_2',
+                fabs=False, active=True,
+                epsilon=1e-4, train=self.tr)
+            pool_2 = self.maxpool(
+                inputs=conv_2,
+                k_size=5, stride=2,
+                padding='SAME',
+                scope_name='pool_2')
 
-            with tf.control_dependencies([assign_op]):
+            conv_3 = self.conv_layer(
+                inputs=pool_2, filters=64,
+                k_size=5, stride=1,
+                padding='VALID',
+                scope_name='conv_3',
+                fabs=False, active=True,
+                epsilon=1e-4, train=self.tr)
+            pool_3 = self.maxpool(
+                inputs=conv_3,
+                k_size=5, stride=2,
+                padding='SAME',
+                scope_name='pool_3')
 
-                convres = tf.nn.conv2d(
-                    self.x,
-                    self.convres_kernel,
-                    strides=[1, 1, 1, 1],
-                    padding='VALID',
-                    name='convres')
-                convres = tf.nn.bias_add(
-                    convres, self.convres_biases)
+            conv_4 = self.conv_layer(
+                inputs=pool_3, filters=128,
+                k_size=1, stride=1,
+                padding='VALID',
+                scope_name='conv_4',
+                fabs=False, active=True,
+                epsilon=1e-4, train=self.tr)
+            pool_4 = self.averagepool(
+                inputs=conv_4,
+                k_size=5, stride=2,
+                padding='SAME',
+                scope_name='pool_4')
 
-                conv_1 = self.conv_layer(
-                    inputs=convres, filters=96,
-                    k_size=7, stride=2,
-                    padding='VALID',
-                    scope_name='conv_1',
-                    fabs=False, active=True,
-                    epsilon=1e-4, train=self.tr)
-                pool_1 = self.maxpool(
-                    inputs=conv_1,
-                    k_size=5, stride=2,
-                    padding='SAME',
-                    scope_name='pool_1')
+            cur_dim = pool_4.get_shape()
+            pool4_dim = cur_dim[1] * cur_dim[2] * cur_dim[3]
+            pool4_flatten = tf.reshape(pool_4, shape=[-1, pool4_dim])
 
-                conv_2 = self.conv_layer(
-                    inputs=pool_1, filters=64,
-                    k_size=5, stride=1,
-                    padding='VALID',
-                    scope_name='conv_2',
-                    fabs=False, active=True,
-                    epsilon=1e-4, train=self.tr)
-                pool_2 = self.maxpool(
-                    inputs=conv_2,
-                    k_size=5, stride=2,
-                    padding='SAME',
-                    scope_name='pool_2')
+            fc5 = self.fully_connected(
+                pool4_flatten, out_dim=1024,
+                scope_name='fc5', activation=tf.nn.relu)
+            fc5 = tf.layers.dropout(
+                fc5,
+                self.kp,
+                training=self.tr,
+                name='dropout_1')
 
-                conv_3 = self.conv_layer(
-                    inputs=pool_2, filters=64,
-                    k_size=5, stride=1,
-                    padding='VALID',
-                    scope_name='conv_3',
-                    fabs=False, active=True,
-                    epsilon=1e-4, train=self.tr)
-                pool_3 = self.maxpool(
-                    inputs=conv_3,
-                    k_size=5, stride=2,
-                    padding='SAME',
-                    scope_name='pool_3')
+            fc6 = self.fully_connected(
+                fc5, out_dim=512,
+                scope_name='fc6', activation=tf.nn.relu)
+            fc6 = tf.layers.dropout(
+                fc6,
+                self.kp,
+                training=self.tr,
+                name='dropout_2')
 
-                conv_4 = self.conv_layer(
-                    inputs=pool_3, filters=128,
-                    k_size=1, stride=1,
-                    padding='VALID',
-                    scope_name='conv_4',
-                    fabs=False, active=True,
-                    epsilon=1e-4, train=self.tr)
-                pool_4 = self.averagepool(
-                    inputs=conv_4,
-                    k_size=5, stride=2,
-                    padding='SAME',
-                    scope_name='pool_4')
+            self.logits = self.fully_connected(
+                fc6, out_dim=self.n_classes,
+                scope_name='logits', activation=None)
 
-                cur_dim = pool_4.get_shape()
-                pool4_dim = cur_dim[1] * cur_dim[2] * cur_dim[3]
-                pool4_flatten = tf.reshape(pool_4, shape=[-1, pool4_dim])
+            tf.add_to_collection('logits', self.logits)
 
-                fc5 = self.fully_connected(
-                    pool4_flatten, out_dim=1024,
-                    scope_name='fc5', activation=tf.nn.relu)
-                fc5 = tf.layers.dropout(
-                    fc5,
-                    self.kp,
-                    training=self.tr,
-                    name='dropout_1')
+        with tf.name_scope('logits_argmax') as scope:
+            self.logits_argmax = tf.argmax(
+                self.logits, axis=1,
+                output_type=tf.int64, name='out_argmax')
 
-                fc6 = self.fully_connected(
-                    fc5, out_dim=512,
-                    scope_name='fc6', activation=tf.nn.relu)
-                fc6 = tf.layers.dropout(
-                    fc6,
-                    self.kp,
-                    training=self.tr,
-                    name='dropout_2')
+        with tf.name_scope('loss') as scope:
+            self.entropy = tf.losses.sparse_softmax_cross_entropy(
+                labels=self.y, logits=self.logits)
+            self.loss = tf.reduce_mean(self.entropy, name='loss')
 
-                self.logits = self.fully_connected(
-                    fc6, out_dim=self.n_classes,
-                    scope_name='logits', activation=None)
+        with tf.name_scope('learning_rate_decay') as scope:
+            learning_rate = tf.train.cosine_decay_restarts(
+                learning_rate=config.learning_rate,
+                global_step=self.global_step_tensor,
+                first_decay_steps=config.num_iter_per_epoch,
+                t_mul=2.0,
+                m_mul=0.9,
+                alpha=0.0,
+                name='learning_rate_with_restart')
 
-                tf.add_to_collection('logits', self.logits)
+        with tf.name_scope('train_step') as scope:
+            self.optimizer = tf.train.MomentumOptimizer(
+                learning_rate=learning_rate,
+                momentum=self.config.momentum)
 
-            with tf.name_scope('logits_argmax') as scope:
-                self.logits_argmax = tf.argmax(
-                    self.logits, axis=1,
-                    output_type=tf.int64, name='out_argmax')
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
-            with tf.name_scope('loss') as scope:
-                self.entropy = tf.losses.sparse_softmax_cross_entropy(
-                    labels=self.y, logits=self.logits)
-                self.loss = tf.reduce_mean(self.entropy, name='loss')
+            with tf.control_dependencies(update_ops):
+                self.train_step = self.optimizer.minimize(
+                    self.loss, global_step=self.global_step_tensor)
 
-            with tf.name_scope('learning_rate_decay') as scope:
-                learning_rate = tf.train.cosine_decay_restarts(
-                    learning_rate=config.learning_rate,
-                    global_step=self.global_step_tensor,
-                    first_decay_steps=config.num_iter_per_epoch,
-                    t_mul=2.0,
-                    m_mul=0.9,
-                    alpha=0.0,
-                    name='learning_rate_with_restart')
+        with tf.name_scope('accuracy'):
+            prediction = tf.nn.softmax(self.logits, name='prediction')
+            correct_prediction = tf.equal(
+                tf.argmax(
+                    prediction, axis=1), tf.cast(self.y, dtype=tf.int64))
+            self.accuracy = tf.reduce_mean(
+                tf.cast(correct_prediction, tf.float32))
 
-            with tf.name_scope('train_step') as scope:
-                self.optimizer = tf.train.MomentumOptimizer(
-                    learning_rate=learning_rate,
-                    momentum=self.config.momentum)
-
-                update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-
-                with tf.control_dependencies(update_ops):
-                    self.train_step = self.optimizer.minimize(
-                        self.loss, global_step=self.global_step_tensor)
-
-            with tf.name_scope('accuracy'):
-                prediction = tf.nn.softmax(self.logits, name='prediction')
-                correct_prediction = tf.equal(
-                    tf.argmax(
-                        prediction, axis=1), tf.cast(self.y, dtype=tf.int64))
-                self.accuracy = tf.reduce_mean(
-                    tf.cast(correct_prediction, tf.float32))
-
-            tf.add_to_collection('train', self.train_step)
-            tf.add_to_collection('loss', self.loss)
-            tf.add_to_collection('acc', self.accuracy)
+        tf.add_to_collection('train', self.train_step)
+        tf.add_to_collection('loss', self.loss)
+        tf.add_to_collection('acc', self.accuracy)
 
     def init_saver(self):
         self.saver = tf.train.Saver(

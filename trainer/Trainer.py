@@ -45,13 +45,21 @@ class Trainer(BaseTrain):
     def train_step(self):
         batch_x, batch_y = self.data_loader.get_batch()
 
+        kernel = sess.run(self.convres_kernel)
+
+        for i in range(kernel.shape[3]):
+            kernel[:, :, :, i] = normalize(kernel[:, :, :, i], alpha=-1)
+
         feed_dict = {
             self.model.x: batch_x,
             self.model.y: batch_y,
             self.model.tr: True,
+            self.model.nk: kernel
         }
-        _, loss, acc, step = self.sess.run(
+
+        _, _, loss, acc, step = self.sess.run(
             [
+                self.model.norm_op,
                 self.model.train_step,
                 self.model.loss,
                 self.model.accuracy,

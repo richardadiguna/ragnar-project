@@ -3,15 +3,15 @@ import argparse
 import numpy as np
 
 
-def normalize(nparray, alpha=-1):
-    nparray = np.array(nparray)
-    nparray[2, 2] = alpha
-    nparray = np.ma.array(nparray, mask=False)
-    nparray.mask[2, 2] = True
-    sumation = nparray.sum()
-    nparray = nparray/sumation
-    nparray = np.array(nparray)
-    return nparray
+def normalize(kernel, alpha=-1):
+    kernel_arr = np.array(kernel)
+    kernel_arr[2, 2] = alpha
+    kernel_arr = np.ma.array(kernel_arr, mask=False)
+    kernel_arr.mask[2, 2] = True
+    sumation = kernel_arr.sum()
+    kernel_arr = kernel_arr/sumation
+    kernel_arr = np.array(kernel_arr)
+    return kernel_arr
 
 
 def green_channel(im_path, window_size=128, stride=128):
