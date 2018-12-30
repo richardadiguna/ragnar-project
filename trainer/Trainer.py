@@ -57,11 +57,9 @@ class Trainer(BaseTrain):
             self.model.nk: kernel
         }
 
-        _ = self.sess.run(self.model.norm_op, feed_dict=feed_dict)
-        print(self.sess.run(self.model.conres_kernel))
-
-        _, loss, acc, step = self.sess.run(
+        _, _, loss, acc, step = self.sess.run(
             [
+                self.model.norm_op,
                 self.model.train_step,
                 self.model.loss,
                 self.model.accuracy,
