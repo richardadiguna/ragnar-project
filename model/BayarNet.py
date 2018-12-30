@@ -235,7 +235,9 @@ class BayarNet(BaseModel):
                 tf.constant(1.0, shape=[filters]),
                 name='gamma',
                 trainable=False)
+
             batch_mean, batch_var = tf.nn.moments(conv, [0, 1, 2])
+
             ema = tf.train.ExponentialMovingAverage(decay=0.1)
 
             def mean_var_with_update():
