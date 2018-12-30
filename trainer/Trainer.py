@@ -45,7 +45,7 @@ class Trainer(BaseTrain):
     def train_step(self):
         batch_x, batch_y = self.data_loader.get_batch()
 
-        kernel = sess.run(self.convres_kernel)
+        kernel = self.sess.run(self.model.convres_kernel)
 
         for i in range(kernel.shape[3]):
             kernel[:, :, :, i] = normalize(kernel[:, :, :, i], alpha=-1)

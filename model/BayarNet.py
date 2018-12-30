@@ -63,7 +63,7 @@ class BayarNet(BaseModel):
                 initializer=tf.random_normal_initializer())
 
         with tf.name_scope('normalized_op') as scope:
-            norm_op = tf.assign(self.convres_kernel, self.nk)
+            self.norm_op = tf.assign(self.convres_kernel, self.nk)
 
         with tf.name_scope('network') as scope:
             convres = tf.nn.conv2d(
