@@ -13,4 +13,4 @@ Docker dependencies:
 2. Pull tensorflow serving: 
 	- docker pull tensorflow/serving:latest-gpu
 3. Create new container and run:
-	- docker run --runtime=nvidia -p 8501:8501 --name kratos_serve --mount type=bind,source=/home/richardadiguna17/kratos-project/savedmodel,target=/models/kratos -e MODEL_NAME=kratos -t tensorflow/serving:latest-gpu
+	- docker run --runtime=nvidia -p 8501:8501 --name ragnar_serve --mount type=bind,source=/home/richardadiguna17/kratos-project/savedmodel,target=/models/kratos -e MODEL_NAME=kratos -t tensorflow/serving:latest-gpu
