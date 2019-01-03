@@ -13,6 +13,8 @@ HOST = 'localhost:8502'
 MODEL_NAME = 'ragnar'
 VERSION = 1
 
+ALLOWED_EXTENSIONS = set(['jpg', 'jpeg'])
+
 
 def prediction_summary(preds):
     pristine = 0
@@ -43,6 +45,7 @@ def get_prediction_from_model(data):
 
     if data.shape != (128, 128):
         data = cv2.resize(data, (128, 128))
+    print(data.shape)
 
     payload = {"instances": [{'images': data.tolist()}]}
     r = requests.post(
@@ -52,18 +55,9 @@ def get_prediction_from_model(data):
     c_data = json.loads(b)
     response = Bunch(c_data)
 
-    rank = np.argmax(response.predictions)
+    result = prediction_summary(response.predictions)
 
-    if rank == 0:
-        return 'background'
-    elif rank == 1:
-        return 'e-ktp'
-    elif rank == 2:
-        return 'ktp'
-    elif rank == 3:
-        return 'dukcapil'
-
-    return 'undefined'
+    return result
 
 
 def convert_im_file(file):

@@ -5,7 +5,6 @@ from client.Client import allowed_file
 from client.Client import convert_im_file, get_prediction_from_model
 
 UPLOAD_FOLDER = '/temp'
-ALLOWED_EXTENSIONS = set(['jpg', 'jpeg'])
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
