@@ -6,22 +6,12 @@ import base64
 import requests
 import numpy as np
 
-from bunch import Bunch
-from flask import Flask
-from flask import request
-from flask import jsonify
-from generator.PatchGenerator import tf_patch_extract
+from generator.PatchGenerator import patch_extract
 from utils.Utils import green_channel
 
-UPLOAD_FOLDER = '/temp'
-ALLOWED_EXTENSIONS = set(['jpg', 'jpeg'])
-
-HOST = 'localhost:8501'
+HOST = 'localhost:8502'
 MODEL_NAME = 'ragnar'
 VERSION = 1
-
-app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
 def prediction_summary(preds):
@@ -41,7 +31,7 @@ def prediction_summary(preds):
     if tampered >= pristine:
         return 'Tampered'
     else:
-        tampered_prob = (tampered/num_preds)*100
+        tampered_prob = (tampered / num_preds) * 100
 
         if tampered_prob >= 15:
             return "Tampered"
@@ -56,7 +46,7 @@ def get_prediction_from_model(data):
 
     payload = {"instances": [{'images': data.tolist()}]}
     r = requests.post(
-        'http://localhost:8501/v1/models/kratos:predict',
+        'http://' + HOST + '/v1/models/' + MODEL_NAME + ':predict',
         json=payload)
     b = r.content.decode('utf8').replace("'", '"')
     c_data = json.loads(b)
@@ -88,30 +78,4 @@ def convert_im_file(file):
 
 def allowed_file(filename):
     return '.' in filename and \
-            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-@app.route("/prediction", methods=['POST'])
-def get_prediction():
-    if request.method == 'POST':
-
-        if 'image' not in request.files:
-            print('No file part, key: image')
-            return jsonify({"error": "No file part, key: image"})
-
-        file = request.files['image']
-
-        if file.filename == '':
-            print('No selected file')
-            return jsonify({"error": "No selected file"})
-
-        if file and allowed_file(file.filename):
-            img_decoded = convert_im_file(file)
-            result = get_prediction_from_model(img_decoded)
-            return jsonify({"result": result})
-
-    return jsonify({"error": "500"})
-
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3000, debug=True)
+        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
