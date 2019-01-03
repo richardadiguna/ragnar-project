@@ -12,10 +12,11 @@ import tensorflow as tf
 from grpc.beta import implementation
 from tensorflow_serving.apis import predict_pb2
 from tensorflow_serving.apis import prediction_service_pb2_grpc
+from bunch import Bunch
 from generator.PatchGenerator import patch_extract
 from utils.Utils import green_channel
 
-HOST = 'localhost:8502'
+HOST = '130.211.244.102:8502'
 MODEL_NAME = 'ragnar'
 VERSION = 1
 
