@@ -9,7 +9,7 @@ def normalize(kernel, alpha=-1):
     kernel_arr = np.ma.array(kernel_arr, mask=False)
     kernel_arr.mask[2, 2] = True
     sumation = kernel_arr.sum()
-    kernel_arr = kernel_arr/sumation
+    kernel_arr = kernel_arr / sumation
     kernel_arr = np.array(kernel_arr)
     return kernel_arr
 
