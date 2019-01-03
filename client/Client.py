@@ -44,7 +44,7 @@ def prediction_summary(preds):
 def get_prediction_from_model(data):
 
     if data.shape != (128, 128):
-        data = cv2.resize(data, (128, 128))
+        data = green_channel(cv2.resize(data, (128, 128)))
     print(data.shape)
 
     payload = {"instances": [{'images': data.tolist()}]}

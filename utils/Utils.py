@@ -14,8 +14,7 @@ def normalize(kernel, alpha=-1):
     return kernel_arr
 
 
-def green_channel(im_path, window_size=128, stride=128):
-    image = cv2.imread(im_path)
+def green_channel(image):
     image = image[:, :, 1].reshape(
         image.shape[0],
         image.shape[1],
