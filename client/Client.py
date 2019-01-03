@@ -52,7 +52,6 @@ def get_prediction_from_model(data):
 
     data = green_channel(data)
     patches, _, _ = patch_extract(data, 128, 64)
-
     channel = implementations.insecure_channel('localhost', 8500)
     stub = prediction_service_pb2.beta_create_PredictionService_stub(channel)
 
@@ -67,11 +66,10 @@ def get_prediction_from_model(data):
         tf.contrib.util.make_tensor_proto(
             False, dtype=bool))
 
-    result = stub.Predict(request, 10.0)
-    
-    print(result)
+    result = stub.Predict(request, 90.0)
+    scores = np.array(result.outputs['scores'].float_val)
 
-    return "Success"
+    return scores.tolist()
 
 
 def convert_im_file(file):
