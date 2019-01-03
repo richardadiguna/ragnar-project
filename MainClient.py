@@ -1,6 +1,7 @@
 from flask import Flask
 from flask import request
 from flask import jsonify
+from client.Client import allowed_file
 from client.Client import convert_im_file, get_prediction_from_model
 
 UPLOAD_FOLDER = '/temp'
