@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import io
 import cv2
@@ -5,7 +7,11 @@ import json
 import base64
 import requests
 import numpy as np
+import tensorflow as tf
 
+from grpc.beta import implementation
+from tensorflow_serving.apis import predict_pb2
+from tensorflow_serving.apis import prediction_service_pb2_grpc
 from generator.PatchGenerator import patch_extract
 from utils.Utils import green_channel
 
@@ -43,16 +49,26 @@ def prediction_summary(preds):
 
 def get_prediction_from_model(data):
 
-    if data.shape != (128, 128):
-        data = green_channel(cv2.resize(data, (128, 128)))
-    print(data.shape)
+    data = green_channel(data)
+    patches, _, _ = patch_extract(data, 128, 64)
 
-    payload = {"instances": [{'images': data.tolist()}]}
-    r = requests.post(
-        'http://' + HOST + '/v1/models/' + MODEL_NAME + ':predict',
-        json=payload)
-    b = r.content.decode('utf8').replace("'", '"')
-    c_data = json.loads(b)
+    channel = implementations.insecure_channel('localhost', 8500)
+    stub = prediction_service_pb2_grpc.cre(channel)
+
+    request = predict_pb2.PredictRequest()
+    request.model_spec.name = 'ragnar'
+    request.model_spec.signature_name = ''
+
+    request.inputs['images'].CopyFrom(
+        tf.contrib.util.make_tensor_proto(
+            patches[0], dtype=float32, shape=[1, 128, 128, 1]))
+    request.inputs['trainable'].CopyFrom(
+        tf.contrib.util.make_tensor_proto(
+            False, dtype=bool))
+
+    result = stub.Predict(request, 10.0)
+
+    c_data = json.loads(result)
     response = Bunch(c_data)
 
     result = prediction_summary(response.predictions)
