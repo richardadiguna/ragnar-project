@@ -9,9 +9,9 @@ import requests
 import numpy as np
 import tensorflow as tf
 
-from grpc.beta import implementation
+from grpc.beta import implementations
 from tensorflow_serving.apis import predict_pb2
-from tensorflow_serving.apis import prediction_service_pb2_grpc
+from tensorflow_serving.apis import prediction_service_pb2
 from bunch import Bunch
 from generator.PatchGenerator import patch_extract
 from utils.Utils import green_channel
@@ -54,7 +54,7 @@ def get_prediction_from_model(data):
     patches, _, _ = patch_extract(data, 128, 64)
 
     channel = implementations.insecure_channel('localhost', 8500)
-    stub = prediction_service_pb2_grpc.cre(channel)
+    stub = prediction_service_pb2.beta_create_PredictionService_stub(channel)
 
     request = predict_pb2.PredictRequest()
     request.model_spec.name = 'ragnar'
@@ -62,19 +62,16 @@ def get_prediction_from_model(data):
 
     request.inputs['images'].CopyFrom(
         tf.contrib.util.make_tensor_proto(
-            patches[0], dtype=float32, shape=[1, 128, 128, 1]))
+            patches[0], dtype=np.float32, shape=[1, 128, 128, 1]))
     request.inputs['trainable'].CopyFrom(
         tf.contrib.util.make_tensor_proto(
             False, dtype=bool))
 
     result = stub.Predict(request, 10.0)
+    
+    print(result)
 
-    c_data = json.loads(result)
-    response = Bunch(c_data)
-
-    result = prediction_summary(response.predictions)
-
-    return result
+    return "Success"
 
 
 def convert_im_file(file):
