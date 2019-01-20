@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import io
 import cv2
@@ -5,75 +7,93 @@ import json
 import base64
 import requests
 import numpy as np
+import tensorflow as tf
 
+from grpc.beta import implementations
+from tensorflow_serving.apis import predict_pb2
+from tensorflow_serving.apis import prediction_service_pb2
 from bunch import Bunch
-from flask import Flask
-from flask import request
-from flask import jsonify
-from generator.PatchGenerator import tf_patch_extract
+from generator.PatchGenerator import patch_extract
 from utils.Utils import green_channel
 
-UPLOAD_FOLDER = '/temp'
-ALLOWED_EXTENSIONS = set(['jpg', 'jpeg'])
 
-HOST = 'localhost:8501'
+HOST = '35.194.178.163:8500'
 MODEL_NAME = 'ragnar'
 VERSION = 1
 
-app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+ALLOWED_EXTENSIONS = set(['jpg', 'jpeg'])
+NUM_CLASSES = 6
 
 
-def prediction_summary(preds):
+def prediction_summary(scores, threshold):
+    n = len(scores)
+    count = 0
+
+    preds = np.zeros(
+        shape=((n // NUM_CLASSES), NUM_CLASSES),
+        dtype=np.float32)
+
+    for i in range(n):
+
+        if i == 0:
+            continue
+
+        if i % NUM_CLASSES == 0:
+            probs = scores[i-NUM_CLASSES:i]
+            probs_arr = np.array(probs, dtype=np.float32)
+            preds[count] = probs_arr
+            count += 1
+
+    predictions = np.argmax(preds, axis=1)
+    unique, counts = np.unique(predictions, return_counts=True)
+    summary = dict(zip(unique, counts))
+
+    # summary with key 0 has value the numbers of pristine patches
+    # keys besides 0 has value the numbers of tampered patches
     pristine = 0
-    tampered = 0
-    num_preds = preds.shape[0]
-    class_predictions = np.argmax(preds, axis=1)
 
-    for out in class_predictions:
-        if out == 1 or out == 2 or \
-           out == 3 or out == 4 or \
-           out == 5:
-            tampered += 1
-        else:
-            pristine += 1
+    # Pristine class
+    if summary[0]:
+        pristine += summary[0]
 
-    if tampered >= pristine:
+    # JPEG compression class
+    # exclude this for being a tampered class
+    if summary[5]:
+        pristine += summary[5]
+
+    pristine_pa = (pristine / (n // NUM_CLASSES)) * 100.0
+
+    if pristine_pa < threshold:
         return 'Tampered'
-    else:
-        tampered_prob = (tampered/num_preds)*100
 
-        if tampered_prob >= 15:
-            return "Tampered"
-        else:
-            return "Pristine"
+    return 'Pristine'
 
 
 def get_prediction_from_model(data):
+    host = HOST.split(':')
+    data = green_channel(data)
+    patches, _, _ = patch_extract(data, 128, 64)
+    channel = implementations.insecure_channel(host[0], int(host[1]))
+    stub = prediction_service_pb2.beta_create_PredictionService_stub(channel)
 
-    if data.shape != (128, 128):
-        data = cv2.resize(data, (128, 128))
+    request = predict_pb2.PredictRequest()
+    request.model_spec.name = 'ragnar'
+    request.model_spec.signature_name = ''
 
-    payload = {"instances": [{'images': data.tolist()}]}
-    r = requests.post(
-        'http://localhost:8501/v1/models/kratos:predict',
-        json=payload)
-    b = r.content.decode('utf8').replace("'", '"')
-    c_data = json.loads(b)
-    response = Bunch(c_data)
+    request.inputs['images'].CopyFrom(
+        tf.contrib.util.make_tensor_proto(
+            patches, dtype=np.float32,
+            shape=[patches.shape[0], 128, 128, 1]))
+    request.inputs['trainable'].CopyFrom(
+        tf.contrib.util.make_tensor_proto(
+            False, dtype=bool))
 
-    rank = np.argmax(response.predictions)
+    result = stub.Predict(request, 100.0)
+    scores = np.array(result.outputs['scores'].float_val)
 
-    if rank == 0:
-        return 'background'
-    elif rank == 1:
-        return 'e-ktp'
-    elif rank == 2:
-        return 'ktp'
-    elif rank == 3:
-        return 'dukcapil'
+    out = prediction_summary(scores.tolist(), 85.0)
 
-    return 'undefined'
+    return out
 
 
 def convert_im_file(file):
@@ -88,30 +108,4 @@ def convert_im_file(file):
 
 def allowed_file(filename):
     return '.' in filename and \
-            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-@app.route("/prediction", methods=['POST'])
-def get_prediction():
-    if request.method == 'POST':
-
-        if 'image' not in request.files:
-            print('No file part, key: image')
-            return jsonify({"error": "No file part, key: image"})
-
-        file = request.files['image']
-
-        if file.filename == '':
-            print('No selected file')
-            return jsonify({"error": "No selected file"})
-
-        if file and allowed_file(file.filename):
-            img_decoded = convert_im_file(file)
-            result = get_prediction_from_model(img_decoded)
-            return jsonify({"result": result})
-
-    return jsonify({"error": "500"})
-
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3000, debug=True)
+        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
