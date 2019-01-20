@@ -30,20 +30,20 @@ with tf.Session() as sess:
     saver.restore(sess, checkpoint)
     graph = tf.get_default_graph()
     x = graph.get_tensor_by_name('inputs/x:0')
-    tr = graph.get_tensor_by_name('inputs/tr:0')
+    tr = graph.get_tensor_by_name('inputs/trainable:0')
     prediction = graph.get_tensor_by_name('accuracy/prediction:0')
 
     builder = tf.saved_model.builder.SavedModelBuilder(SERVE_PATH)
 
     # Create tensor info
     model_input_x = tf.saved_model.utils.build_tensor_info(x)
-    model_input_tr = tf.saved.model.utils.build_tensor_info(tr)
+    model_input_tr = tf.saved_model.utils.build_tensor_info(tr)
     model_output = tf.saved_model.utils.build_tensor_info(prediction)
 
     # Build signature definition
     prediction_signature = \
         tf.saved_model.signature_def_utils.build_signature_def(
-            inputs={'images': model_input, 'trainable': model_input_tr},
+            inputs={'images': model_input_x, 'trainable': model_input_tr},
             outputs={'scores': model_output},
             method_name=tf.saved_model.signature_constants.PREDICT_METHOD_NAME)
 
