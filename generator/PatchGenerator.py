@@ -36,6 +36,42 @@ def patch_extract(image, patch_size, stride):
     return patches, patch_num_L1, patch_num_L2
 
 
+def map_to_full(feamap, patch_num_L1, patch_num_L2, image, patch_size, stride):
+    (L1, L2, L3) = image.shape
+    feamap_full = np.zeros((L1, L2, 1), dtype=float)
+    feamap_full_num = np.zeros((L1, L2, 1), dtype=float)
+    start_l1 = 0
+    end_l1 = 0
+    start_l2 = 0
+    end_l2 = 0
+    for l1 in range(0, (patch_num_L1)):
+        for l2 in range(0, (patch_num_L2)):
+            start_l1 = (l1)*stride
+            end_l1 = start_l1 + patch_size
+            start_l2 = (l2) * stride
+            end_l2 = start_l2 + patch_size
+            if end_l1 <= L1 and end_l2 <= L2:
+                feamap_full[
+                    start_l1:end_l1,
+                    start_l2:end_l2, :] = \
+                        feamap_full[
+                            start_l1:end_l1,
+                            start_l2:end_l2, :] + feamap[l1, l2]
+                feamap_full_num[start_l1:end_l1, start_l2:end_l2, :] = \
+                    feamap_full_num[start_l1:end_l1, start_l2:end_l2, :] + 1
+    o_l = np.where(feamap_full_num=0)
+    feamap_full[o_l] = 1.0
+    feamap_full_num[o_l] = 1.0
+    feamap_full = feamap_full/feamap_full_num
+    if end_l1 < L1:
+        for l1 in range((end_l1), L1):
+            feamap_full[l1, :] = feamap_full[end_l1-1, :]
+    if end_l2 < L2:
+        for l2 in range((end_l2), L2):
+            feamap_full[:, l2] = feamap_full[:, end_l2 - 1]
+    return feamap_full
+
+
 def tf_patch_extract(image, patch_size, stride):
     tf.reset_default_graph()
 
