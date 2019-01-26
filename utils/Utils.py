@@ -22,6 +22,24 @@ def green_channel(image):
     return image
 
 
+def plot_image_patches(x, ksize_rows=64, ksize_cols=64):
+    nr = x.shape[1]
+    nc = x.shape[2]
+    fig = plt.figure()
+    gs = gridspec.GridSpec(nr, nc)
+    gs.update(wspace=0.01, hspace=0.01)
+
+    for i in range(nr):
+        for j in range(nc):
+            ax = plt.subplot(gs[i*nc+j])
+            plt.axis('off')
+            ax.set_xticklabels([])
+            ax.set_yticklabels([])
+            ax.set_aspect('auto')
+            plt.imshow(x[0, i, j].reshape(ksize_rows, ksize_cols, 3))
+    return fig
+
+
 def create_dirs(dirs):
     try:
         for dir_ in dirs:
